@@ -5,14 +5,11 @@ Created on Tue Jan 29 15:41:38 2019
 @author: piedagnel
 """
 import xlrd
-import re
 import csv
-patt = re.compile("[^\t]+")
 listGeneSymbol = []
 listGeneSymbolFromHpo = []
-listDisease = []
+dictDisease = {}
 listIdHpo = []
-length = 0
 listBaseGene = []
 pathGene = "/home/piedagnel/Desktop/Medgen/ALL_SOURCES_ALL_FREQUENCIES_genes_to_phenotype.txt"
 pathDisease = "/home/piedagnel/Desktop/Medgen/disease_names.txt"
@@ -39,11 +36,14 @@ def getmatching(lines, keywords):
 #    txt_str = str(data)
 #    lines = txt_str.splitlines()
 
-#RECUPERATION DES DATA DANS LES FICHIERS
+
+#RECUPERATION DES DATA DANS LE FICHIER DE LAURENT
 workbook = xlrd.open_workbook("//home//piedagnel//Desktop//667_genes_list_2019.xlsx")
 worksheet = workbook.sheet_by_index(0)
 listGeneSymbol = worksheet.col_values(0)
 
+
+#RECUPERATION DES DATA DANS LE FICHIER GENE TO PHENOTYPES
 fileGene = open(pathGene, 'r')
 parcourGene = fileGene.readline()
 while parcourGene:
@@ -52,9 +52,10 @@ while parcourGene:
     listGeneSymbolFromHpo.append(temp.split()[1])
 
 
-
+#ASSOCIATION DES GENE SYMBOL PANEL LAURENT <==> FICHIER GENE TO PHENOTYPE
 commonGene = list(set(listGeneSymbolFromHpo) & set(listGeneSymbol))
 
+#RECUPERATION DES ID HPO EN FONCTION DES GENES
 with open(pathGene, 'rb') as csvfile:
      spamreader = csv.reader(csvfile, delimiter="\t", quotechar='|')
      i = 0
@@ -67,17 +68,8 @@ with open(pathGene, 'rb') as csvfile:
                  i = i + 1
          except IndexError as e:
              print("erreur a la ligne : ",row)
-                 
-             
-#print(listIdHpo)
 
-
-
-
-
-
-
-
+#RECUPERATION DES DISEASE NAME EN FONCTION DES ID HPO
 with open(pathDisease, 'rb') as csvfile:
      spamreader = csv.reader(csvfile, delimiter="\t", quotechar='|')
      i = 0
@@ -85,15 +77,16 @@ with open(pathDisease, 'rb') as csvfile:
          try:
              if i > 1:
                  if row[3] in listIdHpo:
-                     listDisease.append(row[0])
-             else:
+                     dictDisease[i] = row[0]
                  i = i + 1
          except IndexError as e:
              print("erreur a la ligne : ",row)
+             
+#AFFICHAGE DES DISEASE
 i = 0
-for row in listDisease:
+for row in dictDisease:
     print(row)
     i = i + 1
-print("Maladies associes : ",i)
+print "\n" + "Maladies associes : "+ str(i)
 
 
