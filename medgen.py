@@ -6,87 +6,106 @@ Created on Tue Jan 29 15:41:38 2019
 """
 import xlrd
 import csv
-listGeneSymbol = []
-listGeneSymbolFromHpo = []
-dictDisease = {}
-listIdHpo = []
-listBaseGene = []
 pathGene = "/home/piedagnel/Desktop/Medgen/ALL_SOURCES_ALL_FREQUENCIES_genes_to_phenotype.txt"
 pathDisease = "/home/piedagnel/Desktop/Medgen/disease_names.txt"
 uurl = 'http://compbio.charite.de/jenkins/job/hpo.annotations.monthly/lastSuccessfulBuild/artifact/annotation/ALL_SOURCES_ALL_FREQUENCIES_genes_to_phenotype.txt'
-
-def getCommonID(listA = [],  listB = []):
-    return list(set(listA) & set(listB))
-
-def getmatching(lines, keywords):
-    result = []
-    keywords = set(keywords)
-    for line in lines:
-        matches = len(keywords & set(line.split()))
-        if matches:
-            result.append((matches, line))
-    return (line for matches, line in sorted(result))
-#FUNCTION
-#def download(t_url):
-#    """Download a .txt and return a list of all lines
-#    """
-#    response = urlopen(t_url)
-#    data = response.read()
-#
-#    txt_str = str(data)
-#    lines = txt_str.splitlines()
-
+path = "//home//piedagnel//Desktop//667_genes_list_2019.xlsx"
 
 #RECUPERATION DES DATA DANS LE FICHIER DE LAURENT
-workbook = xlrd.open_workbook("//home//piedagnel//Desktop//667_genes_list_2019.xlsx")
-worksheet = workbook.sheet_by_index(0)
-listGeneSymbol = worksheet.col_values(0)
+def GetData(path):
+    workbook = xlrd.open_workbook(path)
+    worksheet = workbook.sheet_by_index(0)
+    return worksheet.col_values(0)
+    
 
 
 #RECUPERATION DES DATA DANS LE FICHIER GENE TO PHENOTYPES
-fileGene = open(pathGene, 'r')
-parcourGene = fileGene.readline()
-while parcourGene:
-    temp = parcourGene
+def GetGeneSymbolFromHpo():
+    listGene = []
+    fileGene = open(pathGene, 'r')
     parcourGene = fileGene.readline()
-    listGeneSymbolFromHpo.append(temp.split()[1])
+    while parcourGene:
+        temp = parcourGene
+        parcourGene = fileGene.readline()
+        listGene.append(temp.split()[1])
+        
+    fileGene.close()        
+        
+    return listGene
 
 
 #ASSOCIATION DES GENE SYMBOL PANEL LAURENT <==> FICHIER GENE TO PHENOTYPE
-commonGene = list(set(listGeneSymbolFromHpo) & set(listGeneSymbol))
+def GetCommonFromList(listGeneSymbolFromHpo,listGeneSymbol):
+    return list(set(listGeneSymbolFromHpo) & set(listGeneSymbol))
+
 
 #RECUPERATION DES ID HPO EN FONCTION DES GENES
-with open(pathGene, 'rb') as csvfile:
-     spamreader = csv.reader(csvfile, delimiter="\t", quotechar='|')
-     i = 0
-     for row in spamreader:
-         try:
-             if i > 0:
-                 if row[1] in commonGene:
-                     listIdHpo.append(row[3])
-             else:
-                 i = i + 1
-         except IndexError as e:
-             print("erreur a la ligne : ",row)
+def GetHpoIdsByGene(listGene):
+    dictionnaire = {}
+    listHp = []
+    listPhenotype = []
+    dictMerged = {}
+    with open(pathGene, 'rb') as csvfile:
+     spamreader = csv.reader(csvfile, delimiter="\t", quotechar='|')     
+#     POUR PASSER LE HEADER
+     actualGene = (next(spamreader))
+     actualGene = (next(spamreader))
 
-#RECUPERATION DES DISEASE NAME EN FONCTION DES ID HPO
-with open(pathDisease, 'rb') as csvfile:
-     spamreader = csv.reader(csvfile, delimiter="\t", quotechar='|')
-     i = 0
      for row in spamreader:
          try:
-             if i > 1:
-                 if row[3] in listIdHpo:
-                     dictDisease[i] = row[0]
-                 i = i + 1
-         except IndexError as e:
+#            SI LE GENE EST DANS NOTRE LISTE DE GENES COMMUN
+             if row[1] in listGene:
+                 if row[1] == actualGene:
+                     listHp.append(row[3])
+                     listPhenotype.append(row[2])
+                 else:
+                     for i in range(0,len(sorted(listHp))):
+                         dictMerged[listHp[i]] = listPhenotype[i] 
+                         dictionnaire[actualGene] = dictMerged
+                     listHp = []
+                     listPhenotype = []
+                     dictMerged = {}
+                     actualGene = row[1]
+         except IndexError:
              print("erreur a la ligne : ",row)
-             
-#AFFICHAGE DES DISEASE
-i = 0
-for row in dictDisease:
-    print(row)
-    i = i + 1
-print "\n" + "Maladies associes : "+ str(i)
+    return dictionnaire
+    
+#RECUPERATION DES DISEASE NAME EN FONCTION DES ID HPO
+def GetDiseaseFromIdsHpo(dictHpo):
+    with open(pathDisease, 'rb') as csvfile:
+         dictionnaire = {}
+         spamreader = csv.reader(csvfile, delimiter="\t", quotechar='|')
+         actualRow = (next(spamreader))
+         actualRow = (next(spamreader))         
+         try:
+             for key in dictHpo:
+                 a = ""
+         except IndexError:
+             print ""
+    return dictionnaire
+
+def main():
+    listGeneSymbol = GetData(path)
+    listGeneSymbolHpo = GetGeneSymbolFromHpo()
+    commonGenes = GetCommonFromList(listGeneSymbol,listGeneSymbolHpo) 
+    HpoIds = GetHpoIdsByGene(commonGenes)
+    dictDisease = GetDiseaseFromIdsHpo(HpoIds)  
+    
+    
+    #AFFICHAGE DES HPO ID + PHENOTYPES
+    i = 0
+    for key in HpoIds:
+        print"\n\n\n"
+        print "========= " + key + " ========="
+        print"\n"
+        for subKey in HpoIds[key]:
+            print subKey + "  ==>  " + HpoIds[key][subKey]
+    #print "Value : %s" %  HpoIds.get('CLPP')
+    print "\n" + "Maladies associes : "+ str(i)
+    print "\n"
+    print len(HpoIds.items())
+main()
+
+
 
 
