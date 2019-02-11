@@ -6,10 +6,13 @@ Created on Tue Jan 29 15:41:38 2019
 """
 import xlrd
 import csv
+import operator
+
 pathGene = "/home/piedagnel/Desktop/Medgen/ALL_SOURCES_ALL_FREQUENCIES_genes_to_phenotype.txt"
 pathDisease = "/home/piedagnel/Desktop/Medgen/disease_names.txt"
 uurl = 'http://compbio.charite.de/jenkins/job/hpo.annotations.monthly/lastSuccessfulBuild/artifact/annotation/ALL_SOURCES_ALL_FREQUENCIES_genes_to_phenotype.txt'
 path = "//home//piedagnel//Desktop//667_genes_list_2019.xlsx"
+dictNbTermByGene = {}
 
 #RECUPERATION DES DATA DANS LE FICHIER DE LAURENT
 def GetData(path):
@@ -70,41 +73,64 @@ def GetHpoIdsByGene(listGene):
              print("erreur a la ligne : ",row)
     return dictionnaire
     
-#RECUPERATION DES DISEASE NAME EN FONCTION DES ID HPO
-def GetDiseaseFromIdsHpo(dictHpo):
-    with open(pathDisease, 'rb') as csvfile:
-         dictionnaire = {}
-         spamreader = csv.reader(csvfile, delimiter="\t", quotechar='|')
-         actualRow = (next(spamreader))
-         actualRow = (next(spamreader))         
-         try:
-             for key in dictHpo:
-                 a = ""
-         except IndexError:
-             print ""
-    return dictionnaire
+def GetPercentGeneFromDict(dictionnaire):
+    totalgene = 0
+    dictPercentByGene = {}
+    for key in dictionnaire:
+        print"\n\n\n"
+        print len(dictionnaire[key])
+        totalgene += len(dictionnaire[key])
+        print "========= " + key + " ========="
+        print"\n"
+        for subKey in dictionnaire[key]:
+            print subKey + "  ==>  " + dictionnaire[key][subKey]
+    for key in dictionnaire:
+        length = len(dictionnaire[key])
+        dictPercentByGene[key] = (float(length)/float(totalgene))*float(100)
+    print len(dictionnaire.items())
+    print totalgene
+    for key, value in sorted(dictPercentByGene.items(), key = lambda x: x[1], reverse = True):
+        dictPercentByGene.update({key : value})
+    return dictPercentByGene
+    
+def GetAmountByHpoIds(dic):
+    dictHPO = {}
+#    POUR CHAQUE GENE
+    for key in dic:
+        hpoKey = dic[key]
+        i = 0
+#        POUR CHAQUE HPO ID
+        for hpo in hpoKey:
+            if(hpo in dictHPO):
+                dictHPO[hpo] = dictHPO[hpo] + 1
+            else:
+                dictHPO[hpo] = 1
+            
+       # Create a list of tuples sorted by index 1 i.e. value field     
+    dictHPO = sorted(dictHPO.items() ,reverse=True,  key=lambda x: x[1])
+    return dictHPO
+    
 
 def main():
     listGeneSymbol = GetData(path)
     listGeneSymbolHpo = GetGeneSymbolFromHpo()
     commonGenes = GetCommonFromList(listGeneSymbol,listGeneSymbolHpo) 
     HpoIds = GetHpoIdsByGene(commonGenes)
-    dictDisease = GetDiseaseFromIdsHpo(HpoIds)  
-    
-    
-    #AFFICHAGE DES HPO ID + PHENOTYPES
-    i = 0
-    for key in HpoIds:
-        print"\n\n\n"
-        print "========= " + key + " ========="
-        print"\n"
-        for subKey in HpoIds[key]:
-            print subKey + "  ==>  " + HpoIds[key][subKey]
-    #print "Value : %s" %  HpoIds.get('CLPP')
-    print "\n" + "Maladies associes : "+ str(i)
-    print "\n"
-    print len(HpoIds.items())
+    DictPercent = GetPercentGeneFromDict(HpoIds)
+    AmountHPO = GetAmountByHpoIds(HpoIds)
+
+    c = csv.writer(open("Iteration_HPO.csv", "wb"))
+    c.writerow(["ID HPO","Nombre d'apparition","Pourcentage"])
+    tot = 0
+    for elem in AmountHPO:
+        tot += elem[1]
+    for elem in AmountHPO :
+        c.writerow([elem[0],elem[1], (float(elem[1])/float(tot))*float(100)]) 
+    for elem in DictPercent:
+        print elem + " : " + str(DictPercent[elem])
+            
 main()
+
 
 
 
