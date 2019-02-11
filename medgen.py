@@ -6,7 +6,6 @@ Created on Tue Jan 29 15:41:38 2019
 """
 import xlrd
 import csv
-import operator
 
 pathGene = "/home/piedagnel/Desktop/Medgen/ALL_SOURCES_ALL_FREQUENCIES_genes_to_phenotype.txt"
 pathDisease = "/home/piedagnel/Desktop/Medgen/disease_names.txt"
@@ -77,18 +76,10 @@ def GetPercentGeneFromDict(dictionnaire):
     totalgene = 0
     dictPercentByGene = {}
     for key in dictionnaire:
-        print"\n\n\n"
-        print len(dictionnaire[key])
         totalgene += len(dictionnaire[key])
-        print "========= " + key + " ========="
-        print"\n"
-        for subKey in dictionnaire[key]:
-            print subKey + "  ==>  " + dictionnaire[key][subKey]
     for key in dictionnaire:
         length = len(dictionnaire[key])
         dictPercentByGene[key] = (float(length)/float(totalgene))*float(100)
-    print len(dictionnaire.items())
-    print totalgene
     for key, value in sorted(dictPercentByGene.items(), key = lambda x: x[1], reverse = True):
         dictPercentByGene.update({key : value})
     return dictPercentByGene
@@ -116,19 +107,40 @@ def main():
     listGeneSymbolHpo = GetGeneSymbolFromHpo()
     commonGenes = GetCommonFromList(listGeneSymbol,listGeneSymbolHpo) 
     HpoIds = GetHpoIdsByGene(commonGenes)
-    DictPercent = GetPercentGeneFromDict(HpoIds)
     AmountHPO = GetAmountByHpoIds(HpoIds)
-
-    c = csv.writer(open("Iteration_HPO.csv", "wb"))
-    c.writerow(["ID HPO","Nombre d'apparition","Pourcentage"])
+    
+    tempDic = {}
+    for dic in HpoIds:
+        tempDic.update(HpoIds[dic].items())
+    f = open("Iteration_HPO.csv", "wb")
+    c = csv.writer(f)
+    c.writerow(["ID HPO","Nombre d'apparition","Pourcentage","Libellé"])
     tot = 0
+    libelle = ""
     for elem in AmountHPO:
         tot += elem[1]
+    
+    
     for elem in AmountHPO :
-        c.writerow([elem[0],elem[1], (float(elem[1])/float(tot))*float(100)]) 
-    for elem in DictPercent:
-        print elem + " : " + str(DictPercent[elem])
-            
+#        CE FOR SERT JUSTE A RECUPERER LE SYMPTOME
+        for liste in HpoIds.values():
+            for hp in liste:
+                if elem[0] == hp:
+                    libelle = liste[hp]
+        c.writerow([elem[0],elem[1], (float(elem[1])/float(tot))*float(100),libelle])
+    f.close()
+    
+    f =  open("NbHpByGene.csv", "wb")
+    c = csv.writer(f)
+       
+    c.writerow(["Genes","Nombre de gene"])
+    for elem in HpoIds:
+        gene = elem
+        count = 0
+        for i in elem:
+            count += 1
+        c.writerow([gene,count])
+    f.close()
 main()
 
 
