@@ -6,6 +6,7 @@ Created on Tue Jan 29 15:41:38 2019
 """
 import xlrd
 import csv
+import urllib2
 
 pathGene = "/home/piedagnel/Desktop/Medgen/ALL_SOURCES_ALL_FREQUENCIES_genes_to_phenotype.txt"
 pathDisease = "/home/piedagnel/Desktop/Medgen/disease_names.txt"
@@ -19,8 +20,20 @@ def GetData(path):
     worksheet = workbook.sheet_by_index(0)
     return worksheet.col_values(0)
     
-
-
+#DOWNLOAD FILE FROM HPO
+def DlDataFromHpo():
+    print "downloading data from HPO..."
+    response = urllib2.urlopen('http://compbio.charite.de/jenkins/job/hpo.annotations.monthly/lastSuccessfulBuild/artifact/annotation/ALL_SOURCES_ALL_FREQUENCIES_genes_to_phenotype.txt')
+    data = response.read()
+    print "Done\nWriting Hpo's data..."
+    print "Writing Hpo's data..."
+    f = open(pathGene,"w") 
+ 
+    f.write(data) 
+    print "Done"
+     
+    f.close() 
+    
 #RECUPERATION DES DATA DANS LE FICHIER GENE TO PHENOTYPES
 def GetGeneSymbolFromHpo():
     listGene = []
@@ -40,7 +53,20 @@ def GetGeneSymbolFromHpo():
 def GetCommonFromList(listGeneSymbolFromHpo,listGeneSymbol):
     return list(set(listGeneSymbolFromHpo) & set(listGeneSymbol))
 
-
+def ExtractNonCommon(listBase, listCommon):
+    listNotIn = []
+    for elem in list(listBase):
+        if elem not in list(listCommon):
+            listNotIn.append(elem)
+            
+    f =  open("GeneNotInCommon.csv", "wb")
+    c = csv.writer(f)
+       
+    c.writerow(["Genes"])
+    for elem in listNotIn:
+        c.writerow([elem])
+    f.close()
+    
 #RECUPERATION DES ID HPO EN FONCTION DES GENES
 def GetHpoIdsByGene(listGene):
     dictionnaire = {}
@@ -89,7 +115,6 @@ def GetAmountByHpoIds(dic):
 #    POUR CHAQUE GENE
     for key in dic:
         hpoKey = dic[key]
-        i = 0
 #        POUR CHAQUE HPO ID
         for hpo in hpoKey:
             if(hpo in dictHPO):
@@ -103,6 +128,7 @@ def GetAmountByHpoIds(dic):
     
 
 def main():
+    DlDataFromHpo()
     listGeneSymbol = GetData(path)
     listGeneSymbolHpo = GetGeneSymbolFromHpo()
     commonGenes = GetCommonFromList(listGeneSymbol,listGeneSymbolHpo) 
@@ -141,6 +167,8 @@ def main():
             count += 1
         c.writerow([gene,count])
     f.close()
+    
+    ExtractNonCommon(listGeneSymbol,commonGenes)
 main()
 
 
