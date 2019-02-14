@@ -8,9 +8,7 @@ import xlrd
 import csv
 import urllib2
 
-pathGene = "/home/piedagnel/Desktop/Medgen/ALL_SOURCES_ALL_FREQUENCIES_genes_to_phenotype.txt"
-pathDisease = "/home/piedagnel/Desktop/Medgen/disease_names.txt"
-uurl = 'http://compbio.charite.de/jenkins/job/hpo.annotations.monthly/lastSuccessfulBuild/artifact/annotation/ALL_SOURCES_ALL_FREQUENCIES_genes_to_phenotype.txt'
+pathHPO = "/home/piedagnel/Desktop/Medgen/ALL_SOURCES_ALL_FREQUENCIES_genes_to_phenotype.txt"
 path = "//home//piedagnel//Desktop//667_genes_list_2019.xlsx"
 dictNbTermByGene = {}
 
@@ -26,8 +24,7 @@ def DlDataFromHpo():
     response = urllib2.urlopen('http://compbio.charite.de/jenkins/job/hpo.annotations.monthly/lastSuccessfulBuild/artifact/annotation/ALL_SOURCES_ALL_FREQUENCIES_genes_to_phenotype.txt')
     data = response.read()
     print "Done\nWriting Hpo's data..."
-    print "Writing Hpo's data..."
-    f = open(pathGene,"w") 
+    f = open(pathHPO,"w") 
  
     f.write(data) 
     print "Done"
@@ -37,7 +34,7 @@ def DlDataFromHpo():
 #RECUPERATION DES DATA DANS LE FICHIER GENE TO PHENOTYPES
 def GetGeneSymbolFromHpo():
     listGene = []
-    fileGene = open(pathGene, 'r')
+    fileGene = open(pathHPO, 'r')
     parcourGene = fileGene.readline()
     while parcourGene:
         temp = parcourGene
@@ -73,7 +70,7 @@ def GetHpoIdsByGene(listGene):
     listHp = []
     listPhenotype = []
     dictMerged = {}
-    with open(pathGene, 'rb') as csvfile:
+    with open(pathHPO, 'rb') as csvfile:
      spamreader = csv.reader(csvfile, delimiter="\t", quotechar='|')     
 #     POUR PASSER LE HEADER
      actualGene = (next(spamreader))
@@ -112,18 +109,24 @@ def GetPercentGeneFromDict(dictionnaire):
     
 def GetAmountByHpoIds(dic):
     dictHPO = {}
+    temp = 0
 #    POUR CHAQUE GENE
     for key in dic:
         hpoKey = dic[key]
 #        POUR CHAQUE HPO ID
         for hpo in hpoKey:
-            if(hpo in dictHPO):
-                dictHPO[hpo] = dictHPO[hpo] + 1
-            else:
-                dictHPO[hpo] = 1
-            
+                
+            for gene in dic:
+                try:
+                    for hp in dic[gene]:
+                        if hp == hpo:
+                            temp += 1
+                except:
+                    print "erreur"
+            dictHPO[hpo] = temp
+            temp = 0
        # Create a list of tuples sorted by index 1 i.e. value field     
-    dictHPO = sorted(dictHPO.items() ,reverse=True,  key=lambda x: x[1])
+    dictHPO = dict(sorted(dictHPO.items() ,reverse=True,  key=lambda x: x[1]))
     return dictHPO
     
 
@@ -140,33 +143,80 @@ def main():
         tempDic.update(HpoIds[dic].items())
     f = open("Iteration_HPO.csv", "wb")
     c = csv.writer(f)
-    c.writerow(["ID HPO","Nombre d'apparition","Pourcentage","Libellé"])
-    tot = 0
-    libelle = ""
-    for elem in AmountHPO:
-        tot += elem[1]
-    
-    
-    for elem in AmountHPO :
-#        CE FOR SERT JUSTE A RECUPERER LE SYMPTOME
-        for liste in HpoIds.values():
-            for hp in liste:
-                if elem[0] == hp:
-                    libelle = liste[hp]
-        c.writerow([elem[0],elem[1], (float(elem[1])/float(tot))*float(100),libelle])
-    f.close()
-    
-    f =  open("NbHpByGene.csv", "wb")
+    c.writerow(["ID HPO","Nombre d'apparition","Pourcentage","Libellé", "Nombre de gene associé (a ce hp)", "Nombre de présence dans les maladies","Genes"])
+    globalDict = {}
+#    cIdHp, cNbHp, cPercentHp, cTerm, cNbGene, Genes, cNbDiseaseAssociated
+    cIdHp = ""
+    cNbHp = ""
+    cPercentHp = ""
+    cNbGeneAssociated = 0
+#   ECRITURE DES ROWS
+    for gene in HpoIds:
+        hps = HpoIds[gene]
+        for hp in hps:
+            term = hps[hp]
+            cIdHp = hp
+            cNbGeneAssociated = 0
+            for key in AmountHPO:
+                if key == cIdHp:
+                    cNbHp = AmountHPO[key]
+                    cPercentHp = (float(cNbHp)/float(len(AmountHPO)))*float(100)
+            
+            for key in HpoIds: 
+                for subKey in HpoIds[key]:
+                    if subKey == cIdHp:
+                        cNbGeneAssociated += 1
+                        break
+                
+                 
+            globalDict[hp] = [cIdHp,cNbHp,cPercentHp,term,str(cNbGeneAssociated)]
+    f = open("Iteration_HPO.csv", "wb")
     c = csv.writer(f)
-       
-    c.writerow(["Genes","Nombre de gene"])
-    for elem in HpoIds:
-        gene = elem
-        count = 0
-        for i in elem:
-            count += 1
-        c.writerow([gene,count])
+    c.writerow(["ID HPO","Nombre d'apparition","Pourcentage","Libellé", "Nombre de gene associé (a ce hp)", "Nombre de présence dans les maladies","Genes"])
+    for key in globalDict:
+        c.writerow(globalDict[key])
     f.close()
+    
+    
+
+    
+    
+    
+    
+#    TOTAL D'ID HPO
+#    for elem in AmountHPO:
+#        tot += elem[1]
+#    
+#    for elem in AmountHPO :
+##        CE FOR SERT JUSTE A RECUPERER LE SYMPTOME
+#        for liste in HpoIds.values():
+#            for hp in liste:
+#                if elem[0] == hp:
+#                    libelle = liste[hp]
+#        c.writerow([elem[0],elem[1], (float(elem[1])/float(tot))*float(100),libelle])
+#    f.close()
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+#    f =  open("NbHpByGene.csv", "wb")
+#    c = csv.writer(f)
+#       
+#    c.writerow(["Genes","Nombre de gene"])
+#    for elem in HpoIds:
+#        gene = elem
+#        count = 0
+#        for i in elem:
+#            count += 1
+#        c.writerow([gene,count])
+#    f.close()
     
     ExtractNonCommon(listGeneSymbol,commonGenes)
 main()
