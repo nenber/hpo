@@ -7,6 +7,7 @@ Created on Tue Jan 29 15:41:38 2019
 import xlrd
 import csv
 import urllib2
+from xml.dom import minidom
 
 pathHPO = "/home/piedagnel/Desktop/Medgen/ALL_SOURCES_ALL_FREQUENCIES_genes_to_phenotype.txt"
 path = "//home//piedagnel//Desktop//667_genes_list_2019.xlsx"
@@ -109,116 +110,117 @@ def GetPercentGeneFromDict(dictionnaire):
     
 def GetAmountByHpoIds(dic):
     dictHPO = {}
-    temp = 0
-#    POUR CHAQUE GENE
-    for key in dic:
-        hpoKey = dic[key]
-#        POUR CHAQUE HPO ID
-        for hpo in hpoKey:
-                
-            for gene in dic:
-                try:
-                    for hp in dic[gene]:
-                        if hp == hpo:
-                            temp += 1
-                except:
-                    print "erreur"
-            dictHPO[hpo] = temp
-            temp = 0
-       # Create a list of tuples sorted by index 1 i.e. value field     
+    temp = []
+#    print dic.values()[0].keys()
+    for gene in dic:
+        for hp in dic[gene]:
+            temp.append(hp)
+    
+    for line in temp:
+        amount = temp.count(line)
+        dictHPO[line] = amount
+
+            
+    # Create a list of tuples sorted by index 1 i.e. value field     
     dictHPO = dict(sorted(dictHPO.items() ,reverse=True,  key=lambda x: x[1]))
     return dictHPO
     
+    
+def CountHPO(dictHpo):
+    nbTotal = 0
+    dictNbHpoByGene = {}
+    dictNbGeneByHpo = {}
+    dictTermByHpoId = {}
+    dict5GeneByHpo = {}
+    list5Gene = []
+    for gene in dictHpo:
+        if gene not in dictNbHpoByGene:    
+            dictNbHpoByGene[gene] = 0
+        dictNbHpoByGene[gene] += len(dictHpo[gene])
+    
+                
+                
+    
+        nbTotal += len(dictHpo[gene])
+        listHpo = dictHpo[gene].keys()
+        for hpoLine in listHpo:
+            if hpoLine not in dictNbGeneByHpo:
+                dictNbGeneByHpo[hpoLine] = {}
+            if gene not in dictNbGeneByHpo[hpoLine].keys():
+                dictNbGeneByHpo[hpoLine][gene] = 0
+            dictNbGeneByHpo[hpoLine][gene] += 1
+            if hpoLine not in dictTermByHpoId:
+                dictTermByHpoId[hpoLine] = ""
+            dictTermByHpoId[hpoLine] = dictHpo[gene][hpoLine]
+            
+            i = 0
+            list5Gene = []
+            
+            for g in dictHpo.keys():
+                if i == 5 or i > 5:
+                    break
+                if hpoLine in dictHpo[g].keys() and hpoLine not in list5Gene:
+                    list5Gene.append(g)
+                    i += 1
+                    
+                 
+            
+            dict5GeneByHpo[hpoLine] = list5Gene
+    return dictNbHpoByGene, nbTotal, dictNbGeneByHpo, dictTermByHpoId, dict5GeneByHpo
 
 def main():
-    DlDataFromHpo()
-    listGeneSymbol = GetData(path)
-    listGeneSymbolHpo = GetGeneSymbolFromHpo()
-    commonGenes = GetCommonFromList(listGeneSymbol,listGeneSymbolHpo) 
-    HpoIds = GetHpoIdsByGene(commonGenes)
-    AmountHPO = GetAmountByHpoIds(HpoIds)
-    
-    tempDic = {}
-    for dic in HpoIds:
-        tempDic.update(HpoIds[dic].items())
-    f = open("Iteration_HPO.csv", "wb")
-    c = csv.writer(f)
-    c.writerow(["ID HPO","Nombre d'apparition","Pourcentage","Libellé", "Nombre de gene associé (a ce hp)", "Nombre de présence dans les maladies","Genes"])
-    globalDict = {}
-#    cIdHp, cNbHp, cPercentHp, cTerm, cNbGene, Genes, cNbDiseaseAssociated
-    cIdHp = ""
-    cNbHp = ""
-    cPercentHp = ""
-    cNbGeneAssociated = 0
-#   ECRITURE DES ROWS
-    for gene in HpoIds:
-        hps = HpoIds[gene]
-        for hp in hps:
-            term = hps[hp]
-            cIdHp = hp
-            cNbGeneAssociated = 0
-            for key in AmountHPO:
-                if key == cIdHp:
-                    cNbHp = AmountHPO[key]
-                    cPercentHp = (float(cNbHp)/float(len(AmountHPO)))*float(100)
-            
-            for key in HpoIds: 
-                for subKey in HpoIds[key]:
-                    if subKey == cIdHp:
-                        cNbGeneAssociated += 1
-                        break
-                
-                 
-            globalDict[hp] = [cIdHp,cNbHp,cPercentHp,term,str(cNbGeneAssociated)]
-    f = open("Iteration_HPO.csv", "wb")
-    c = csv.writer(f)
-    c.writerow(["ID HPO","Nombre d'apparition","Pourcentage","Libellé", "Nombre de gene associé (a ce hp)", "Nombre de présence dans les maladies","Genes"])
-    for key in globalDict:
-        c.writerow(globalDict[key])
-    f.close()
-    
-    
-
-    
-    
-    
-    
-#    TOTAL D'ID HPO
-#    for elem in AmountHPO:
-#        tot += elem[1]
+#    DlDataFromHpo()
+#    listGeneSymbol = GetData(path)
+#    listGeneSymbolHpo = GetGeneSymbolFromHpo()
+#    commonGenes = GetCommonFromList(listGeneSymbol,listGeneSymbolHpo) 
+#    HpoIds = GetHpoIdsByGene(commonGenes)
+#    AmountHPO = GetAmountByHpoIds(HpoIds)
 #    
-#    for elem in AmountHPO :
-##        CE FOR SERT JUSTE A RECUPERER LE SYMPTOME
-#        for liste in HpoIds.values():
-#            for hp in liste:
-#                if elem[0] == hp:
-#                    libelle = liste[hp]
-#        c.writerow([elem[0],elem[1], (float(elem[1])/float(tot))*float(100),libelle])
-#    f.close()
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-#    f =  open("NbHpByGene.csv", "wb")
+#    dictTemp, nbTotal, dictNbGeneByHpo, dictTermByHpo, dict5GeneByHpo = CountHPO(HpoIds)
+#    #print dictNbGeneByHpo
+#
+#
+#    cIdHp = ""
+#    cNbHp = ""
+#    cPercentHp = ""
+#    cNbGeneAssociated = ""
+#    term = ""
+#    globalDict = {}
+#
+#    for HPO in dictNbGeneByHpo:
+#        cIdHp = HPO
+#        cNbHp = len(dictNbGeneByHpo[HPO])
+##        cPercentHp = (float(cNbHp)/float(len(AmountHPO)))*float(100)
+#        cPercentHp = (float(cNbHp)/float(nbTotal)*float(100))
+##        dictNbGeneByHpo[HPO] = dictNbGeneByHpo[HPO]
+#        for gene in dictNbGeneByHpo[HPO]:
+#            cNbGeneAssociated = len(dictNbGeneByHpo[HPO])
+#            term = dictTermByHpo[HPO]
+#        s = ""
+#        for value in dict5GeneByHpo[HPO]:
+#            s += value + ", "
+#        s = s[:-1]
+#        s = s[:-1]
+#        s += "..."
+#        globalDict[HPO] = [cIdHp,cNbHp,cPercentHp,term,cNbGeneAssociated,s]
+#        
+#    f = open("result_HPO.csv", "wb")
 #    c = csv.writer(f)
-#       
-#    c.writerow(["Genes","Nombre de gene"])
-#    for elem in HpoIds:
-#        gene = elem
-#        count = 0
-#        for i in elem:
-#            count += 1
-#        c.writerow([gene,count])
+#    c.writerow(["ID HPO","Nombre total","Pourcentage","Libellé", "Nombre de gene associé (a ce hp)", "Genes","Nombre de présence dans les maladies"])
+#    for key in globalDict:
+#        c.writerow(globalDict[key])
 #    f.close()
     
-    ExtractNonCommon(listGeneSymbol,commonGenes)
+#    XML
+    doc = minidom.parse('fr_product4_HPO_status.xml')
+    root = doc.documentElement
+    for element in root.getElementsByTagName('Disorder'):
+        attrs   = element.attributes
+        urlnode = attrs['id']
+        print "Disorder id : " + urlnode.nodeValue
+
+
+#    ExtractNonCommon(listGeneSymbol,commonGenes)
 main()
 
 
