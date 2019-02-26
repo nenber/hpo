@@ -11,16 +11,14 @@ import codecs
 import xml.etree.ElementTree as ET
 import sys  
 import os
-
+reload(sys)  
+sys.setdefaultencoding('utf8')
 cwd = os.getcwd()
+path = "/home/piedagnel/Desktop/667_genes_list_2019.xlsx"
 pathHPO = cwd + "/ALL_SOURCES_ALL_FREQUENCIES_genes_to_phenotype.txt"
 pathOrphadata = cwd + "/fr_product4_HPO.xml"
-path = "//home//piedagnel//Desktop//667_genes_list_2019.xlsx"
 dictNbTermByGene = {}
 
-
-def innertext(tag):
-  return (tag.text or '') + ''.join(innertext(e) for e in tag) + (tag.tail or '')
 #RECUPERATION DES DATA DANS LE FICHIER DE LAURENT
 def GetData(path):
     workbook = xlrd.open_workbook(path)
@@ -128,13 +126,13 @@ def GetPercentGeneFromDict(dictionnaire):
         dictPercentByGene.update({key : value})
     return dictPercentByGene
     
-def CountHPO(dictHpo):
+def CountHPO(dictHpo, nbGene):
     nbTotal = 0
     dictNbHpoByGene = {}
     dictNbGeneByHpo = {}
     dictTermByHpoId = {}
-    dict5GeneByHpo = {}
-    list5Gene = []
+    dictGeneByHpo = {}
+    listGene = []
     for gene in dictHpo:
         if gene not in dictNbHpoByGene:    
             dictNbHpoByGene[gene] = 0
@@ -151,38 +149,23 @@ def CountHPO(dictHpo):
                 dictTermByHpoId[hpoLine] = ""
             dictTermByHpoId[hpoLine] = dictHpo[gene][hpoLine]        
             i = 0
-            list5Gene = []        
+            listGene = []        
             for g in dictHpo.keys():
-                if i == 5 or i > 5:
-                    break
-                if hpoLine in dictHpo[g].keys() and hpoLine not in list5Gene:
-                    list5Gene.append(g)
-                    i += 1
-            dict5GeneByHpo[hpoLine] = list5Gene
-    return dictNbHpoByGene, nbTotal, dictNbGeneByHpo, dictTermByHpoId, dict5GeneByHpo
+                if nbGene == 0:
+                    if hpoLine in dictHpo[g].keys() and hpoLine not in listGene:
+                        listGene.append(g)
+                        i += 1
+                elif nbGene > 0:
+#                    if i == nbGene or i > nbGene:
+#                        break
+                    if hpoLine in dictHpo[g].keys() and hpoLine not in listGene:
+                        listGene.append(g)
+                        i += 1
+            dictGeneByHpo[hpoLine] = listGene
+    return dictNbHpoByGene, nbTotal, dictNbGeneByHpo, dictTermByHpoId, dictGeneByHpo
 
-def main():
-
-#    cwd = os.getcwd()
-    DlDataFromHpo()
-    DlDataFromOrphadata()
-    listGeneSymbol = GetData(path)
-    listGeneSymbolHpo = GetGeneSymbolFromHpo()
-    commonGenes = GetCommonFromList(listGeneSymbol,listGeneSymbolHpo) 
-    HpoIds = GetHpoIdsByGene(commonGenes)
-    dictTemp, nbTotal, dictNbGeneByHpo, dictTermByHpo, dict5GeneByHpo = CountHPO(HpoIds)
-    
-    reload(sys)  
-    sys.setdefaultencoding('utf8')
-
-    cIdHp = ""
-    cNbHp = ""
-    cPercentHp = ""
-    cNbGeneAssociated = ""
-    term = ""
-    globalDict = {}
+def ParseTree(nbDisease):
     dictDisease = {}
-    
     tree = ET.parse("fr_product4_HPO.xml")
     root = tree.getroot()    
     for disorder in root[1]:
@@ -191,44 +174,89 @@ def main():
             for hpo in disorder.iter("HPOId"):
                 listTemp.append(hpo.text)
             dictDisease[name.text] = listTemp
-            
+    return dictDisease
+
+    
+
+def main():
+#    cwd = os.getcwd()
+    nbGeneByHpoDesired = 5
+    nbDiseaseDesired = 5
+    #    x2
+    DlDataFromHpo()
+    DlDataFromOrphadata()    
+    print "Generating \"result_HPO.csv\" ..."    
+    listGeneSymbol = GetData(path)
+    listGeneSymbolHpo = GetGeneSymbolFromHpo()
+    commonGenes = GetCommonFromList(listGeneSymbol,listGeneSymbolHpo) 
+    HpoIds = GetHpoIdsByGene(commonGenes)
+    dictTemp, nbTotal, dictNbGeneByHpo, dictTermByHpo, dictGeneByHpo = CountHPO(HpoIds,nbGeneByHpoDesired)
+    dictDisease = ParseTree(6)
+    
+    
+    cIdHp = ""
+    cNbHp = ""
+    cPercentHp = ""
+    cNbGeneAssociated = ""
+    term = ""
+    globalDict = {}
+    
+    
+#    POUR CHAQUE HPO DANS CHAQUE GENE
     for HPO in dictNbGeneByHpo:
         cIdHp = HPO
         cNbHp = len(dictNbGeneByHpo[HPO])
         cPercentHp = (float(cNbHp)/float(nbTotal)*float(100))
         cNbDiseaseAssociated = 0
         cDiseasesAssociated = ""
+        cDiseasesAssociated1 = ""
+        
+#        POUR CHAQUE HPO CONTENU DANS CHAQUE MALADIE
         for k,v in dictDisease.items():
             if HPO in v:
-                cDiseasesAssociated += k
-                cDiseasesAssociated += " | "
+                if cNbDiseaseAssociated < nbDiseaseDesired:
+                    cDiseasesAssociated += k + " | "
+                cDiseasesAssociated1 += k + " | "
                 cNbDiseaseAssociated += 1
         cDiseasesAssociated = cDiseasesAssociated[:-1]
         cDiseasesAssociated = cDiseasesAssociated[:-1]
-        if cNbDiseaseAssociated > 5:
+        cDiseasesAssociated1 = cDiseasesAssociated1[:-1]
+        cDiseasesAssociated1 = cDiseasesAssociated1[:-1]
+        if cNbDiseaseAssociated > nbDiseaseDesired:
             cDiseasesAssociated += "..."
-            
+        
+#        POUR CHAQUE GENE 
         for gene in dictNbGeneByHpo[HPO]:
             cNbGeneAssociated = len(dictNbGeneByHpo[HPO])
             term = dictTermByHpo[HPO]
         cGenesAssociated = ""
-        for value in dict5GeneByHpo[HPO]:
-            cGenesAssociated += value + " | "
+        cGenesAssociated1 = ""
+        i = 1
+        dictTemp = sorted(dictGeneByHpo[HPO].iteritems(), key=lambda (k,v): (v,k))
+        for value in dictTemp:
+            if i < nbGeneByHpoDesired :
+                cGenesAssociated += value + " | "
+            cGenesAssociated1 += value + " | "
+            i += 1
         cGenesAssociated = cGenesAssociated[:-1]
         cGenesAssociated = cGenesAssociated[:-1]
-        if cNbGeneAssociated > 5:
+        cGenesAssociated1 = cGenesAssociated1[:-1]
+        cGenesAssociated1 = cGenesAssociated1[:-1]
+        if cNbGeneAssociated > nbGeneByHpoDesired:
             cGenesAssociated += "..."
-        globalDict[HPO] = [cIdHp,cNbHp,str(cPercentHp) + "%",term,cNbGeneAssociated,cGenesAssociated,cNbDiseaseAssociated,cDiseasesAssociated]
+        globalDict[HPO] = [cIdHp,cNbHp,str(cPercentHp) + "%",term,cNbGeneAssociated,cGenesAssociated,cGenesAssociated1,cNbDiseaseAssociated,cDiseasesAssociated,cDiseasesAssociated1]
 #        ISO-8859-1
     f = codecs.open("result_HPO.csv", "w",encoding="utf_8")
     c = csv.writer(f)
-    c.writerow(["ID HPO","Nombre total","Pourcentage","Libellé", "Nombre de gene associé (a ce hp)", "Genes","Nombre de présence dans les maladies", "Maladies associés"])
+    c.writerow(["ID HPO","Nombre total","Pourcentage","Libellé", "Nombre de gene associés", "5 premiers Genes","Tous les Genes","Nombre de présence dans les maladies", "5 premiers maladies associés", "Toutes les maladies associés"])
     for key in globalDict:
-        print globalDict[key]
         c.writerow(globalDict[key])
     f.close()
     
     ExtractNonCommon(listGeneSymbol,commonGenes)
+    print "Done"
+    print "\nThe common HPOs not found are written in the file \"GeneNotInCommon.csv\""
+    input("")
 main()
 
 
