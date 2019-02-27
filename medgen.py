@@ -2,7 +2,7 @@
 """
 Created on Tue Jan 29 15:41:38 2019
 
-@author: piedagnel
+@author: berenger piedagnel
 """
 import xlrd
 import csv
@@ -232,8 +232,7 @@ def main():
         cGenesAssociated = ""
         cGenesAssociated1 = ""
         i = 1
-        dictTemp = sorted(dictGeneByHpo[HPO].iteritems(), key=lambda (k,v): (v,k))
-        for value in dictTemp:
+        for value in dictGeneByHpo[HPO]:
             if i < nbGeneByHpoDesired :
                 cGenesAssociated += value + " | "
             cGenesAssociated1 += value + " | "
