@@ -27,26 +27,26 @@ def GetData(path):
     
 #DOWNLOAD FILE FROM HPO
 def DlDataFromHpo():
-    print "downloading data from HPO..."
+    print("downloading data from HPO...")
     response = urllib2.urlopen('http://compbio.charite.de/jenkins/job/hpo.annotations.monthly/lastSuccessfulBuild/artifact/annotation/ALL_SOURCES_ALL_FREQUENCIES_genes_to_phenotype.txt')
     data = response.read()
-    print "Done\nWriting Hpo's data..."
+    print("Done\nWriting Hpo's data...")
     f = open(pathHPO,"w") 
  
     f.write(data) 
-    print "Done"
+    print("Done")
      
     f.close()
     
 def DlDataFromOrphadata():
-    print "downloading data from Orphadata..."
+    print("downloading data from Orphadata...")
     response = urllib2.urlopen('http://www.orphadata.org/data/xml/fr_product4_HPO.xml')
     data = response.read()
-    print "Done\nWriting Orphadata's data..."
+    print("Done\nWriting Orphadata's data...")
     f = open(pathOrphadata,"w") 
  
     f.write(data) 
-    print "Done"
+    print("Done")
      
     f.close()
     
@@ -179,13 +179,11 @@ def ParseTree(nbDisease):
     
 
 def main():
-#    cwd = os.getcwd()
     nbGeneByHpoDesired = 5
     nbDiseaseDesired = 5
-    #    x2
     DlDataFromHpo()
     DlDataFromOrphadata()    
-    print "Generating \"result_HPO.csv\" ..."    
+    print("Generating \"result_HPO.csv\" ..."   ) 
     listGeneSymbol = GetData(path)
     listGeneSymbolHpo = GetGeneSymbolFromHpo()
     commonGenes = GetCommonFromList(listGeneSymbol,listGeneSymbolHpo) 
@@ -253,8 +251,8 @@ def main():
     f.close()
     
     ExtractNonCommon(listGeneSymbol,commonGenes)
-    print "Done"
-    print "\nThe common HPOs not found are written in the file \"GeneNotInCommon.csv\""
+    print("Done")
+    print("\nCommon HPOs not found are written in the file \"GeneNotInCommon.csv\"")
     input("")
 main()
 
