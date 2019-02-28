@@ -22,7 +22,7 @@ pathOrphadata = cwd + "/fr_product4_HPO.xml"
 dictNbTermByGene = {}
 
 parser = argparse.ArgumentParser()
-parser.add_argument("path", help="Input file (csv mendatory)",type=str)
+parser.add_argument("-path", help="Input file (csv mendatory), Example : \'/home/user/Desktop/667_genes_list_2019.xlsx\'",required=True ,type=str)
 parser.add_argument("-ng", action="store",dest='numberGene', help="Amount of genes displayed per row",type=int)
 parser.add_argument("-nd", action="store",dest='numberDisease', help="Amount of diseases displayed per row",type=int)
 args = parser.parse_args()
@@ -74,7 +74,7 @@ def GetGeneSymbolFromHpo():
     return listGene
 
 
-#ASSOCIATION DES GENE SYMBOL PANEL LAURENT <==> FICHIER GENE TO PHENOTYPE
+#ASSOCIATION DES GENE SYMBOL PANEL  <==> FICHIER GENE TO PHENOTYPE
 def GetCommonFromList(listGeneSymbolFromHpo,listGeneSymbol):
     return list(set(listGeneSymbolFromHpo) & set(listGeneSymbol))
 
@@ -123,17 +123,17 @@ def GetHpoIdsByGene(listGene):
              print("erreur a la ligne : ",row)
     return dictionnaire
     
-def GetPercentGeneFromDict(dictionnaire):
-    totalgene = 0
-    dictPercentByGene = {}
-    for key in dictionnaire:
-        totalgene += len(dictionnaire[key])
-    for key in dictionnaire:
-        length = len(dictionnaire[key])
-        dictPercentByGene[key] = (float(length)/float(totalgene))*float(100)
-    for key, value in sorted(dictPercentByGene.items(), key = lambda x: x[1], reverse = True):
-        dictPercentByGene.update({key : value})
-    return dictPercentByGene
+#def GetPercentGeneFromDict(dictionnaire):
+#    totalgene = 0
+#    dictPercentByGene = {}
+#    for key in dictionnaire:
+#        totalgene += len(dictionnaire[key])
+#    for key in dictionnaire:
+#        length = len(dictionnaire[key])
+#        dictPercentByGene[key] = (float(length)/float(totalgene))*float(100)
+#    for key, value in sorted(dictPercentByGene.items(), key = lambda x: x[1], reverse = True):
+#        dictPercentByGene.update({key : value})
+#    return dictPercentByGene
     
 def CountHPO(dictHpo, nbGene):
     nbTotal = 0
