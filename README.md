@@ -1,1 +1,1 @@
-Run from terminal : python2 HpoFromGeneList.py -path --ng -nd
+Run from terminal : python2 HpoFromGeneList.py -path -ng -nd
