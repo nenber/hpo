@@ -11,6 +11,8 @@ import codecs
 import xml.etree.ElementTree as ET
 import sys  
 import os
+import argparse
+
 reload(sys)  
 sys.setdefaultencoding('utf8')
 cwd = os.getcwd()
@@ -18,6 +20,13 @@ path = "/home/piedagnel/Desktop/667_genes_list_2019.xlsx"
 pathHPO = cwd + "/ALL_SOURCES_ALL_FREQUENCIES_genes_to_phenotype.txt"
 pathOrphadata = cwd + "/fr_product4_HPO.xml"
 dictNbTermByGene = {}
+
+parser = argparse.ArgumentParser()
+parser.add_argument("path", help="Input file (csv mendatory)",type=str)
+parser.add_argument("-ng", action="store",dest='numberGene', help="Amount of genes displayed per row",type=int)
+parser.add_argument("-nd", action="store",dest='numberDisease', help="Amount of diseases displayed per row",type=int)
+args = parser.parse_args()
+#print("Vous avez précisé X =", args.ng)
 
 #RECUPERATION DES DATA DANS LE FICHIER DE LAURENT
 def GetData(path):
@@ -179,11 +188,18 @@ def ParseTree(nbDisease):
     
 
 def main():
-    nbGeneByHpoDesired = 5
-    nbDiseaseDesired = 5
+    if args.numberGene:
+        nbGeneByHpoDesired = args.numberGene
+    else:
+        nbGeneByHpoDesired = 5
+    if args.numberDisease:
+        nbDiseaseDesired = args.numberDisease
+    else:
+        nbDiseaseDesired = 5
+    
     DlDataFromHpo()
     DlDataFromOrphadata()    
-    print("Generating \"result_HPO.csv\" ..."   ) 
+    print("Generating \"result_HPO.csv\"..."   ) 
     listGeneSymbol = GetData(path)
     listGeneSymbolHpo = GetGeneSymbolFromHpo()
     commonGenes = GetCommonFromList(listGeneSymbol,listGeneSymbolHpo) 
@@ -231,7 +247,7 @@ def main():
         cGenesAssociated1 = ""
         i = 1
         for value in dictGeneByHpo[HPO]:
-            if i < nbGeneByHpoDesired :
+            if i <= nbGeneByHpoDesired :
                 cGenesAssociated += value + " | "
             cGenesAssociated1 += value + " | "
             i += 1
@@ -245,14 +261,14 @@ def main():
 #        ISO-8859-1
     f = codecs.open("result_HPO.csv", "w",encoding="utf_8")
     c = csv.writer(f)
-    c.writerow(["ID HPO","Nombre total","Pourcentage","Libellé", "Nombre de gene associés", "5 premiers Genes","Tous les Genes","Nombre de présence dans les maladies", "5 premiers maladies associés", "Toutes les maladies associés"])
+    c.writerow(["ID HPO","Nombre total","Pourcentage","Libellé", "Nombre de gene associés", str(nbGeneByHpoDesired) + " premiers Genes","Tous les Genes","Nombre de présence dans les maladies", str(nbDiseaseDesired) + " premiers maladies associés", "Toutes les maladies associés"])
     for key in globalDict:
         c.writerow(globalDict[key])
     f.close()
     
     ExtractNonCommon(listGeneSymbol,commonGenes)
     print("Done")
-    print("\nNote : Common HPOs not found are written in the file \"GeneNotInCommon.csv\"")
+    print("\nNote : Common HPOs not found are written in the file \"GeneNotInCommon.csv\"\n")
 main()
 
 
