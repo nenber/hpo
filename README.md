@@ -1,5 +1,6 @@
 # How to run
-**From terminal :** ```python2 HpoFromGeneList.py -path [Input file] -ng [Amount of gene] -nd [Amount of disease]```
+**From terminal :** 
+* ```python2 HpoFromGeneList.py -path [Input file] -ng [Amount of gene] -nd [Amount of disease]```
 	
 **Parameters**
 * [Mandatory] -path : The path of the input file
