@@ -16,13 +16,13 @@ import argparse
 reload(sys)  
 sys.setdefaultencoding('utf8')
 cwd = os.getcwd()
-path = "/home/piedagnel/Desktop/667_genes_list_2019.xlsx"
+#path = "/home/piedagnel/Desktop/667_genes_list_2019.xlsx"
 pathHPO = cwd + "/ALL_SOURCES_ALL_FREQUENCIES_genes_to_phenotype.txt"
 pathOrphadata = cwd + "/fr_product4_HPO.xml"
 dictNbTermByGene = {}
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-path", help="Input file (csv mendatory), Example : \'/home/user/Desktop/667_genes_list_2019.xlsx\'",required=True ,type=str)
+parser.add_argument("-path",action="store",dest='path',help="Input file (csv mendatory), Example : \'/home/user/Desktop/667_genes_list_2019.xlsx\'",required=True ,type=str)
 parser.add_argument("-ng", action="store",dest='numberGene', help="Amount of genes displayed per row",type=int)
 parser.add_argument("-nd", action="store",dest='numberDisease', help="Amount of diseases displayed per row",type=int)
 args = parser.parse_args()
@@ -196,6 +196,8 @@ def main():
         nbDiseaseDesired = args.numberDisease
     else:
         nbDiseaseDesired = 5
+    if args.path:
+        path = args.path
     
     DlDataFromHpo()
     DlDataFromOrphadata()    
