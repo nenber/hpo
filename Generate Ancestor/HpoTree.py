@@ -5,7 +5,9 @@ Created on Fri Mar  1 13:28:01 2019
 @author: piedagnel
 """
 import xlrd
-
+import sys
+sys.setrecursionlimit(10000)
+Ancestors = []
 
 def GetData(path):
     workbook = xlrd.open_workbook(path)
@@ -85,22 +87,119 @@ def GetAllChildren(rootDict):
     return dictChildren
 
 
-def main():
-    rootDict = GetTreeObo_2("hp.obo")
-    for key in rootDict:
-        print key + " : "
-        for subkey in rootDict[key]:
-            print subkey + " : " + rootDict[key][subkey]
-        print '\n\n'
+def GetAncestors(hpo, rootDict):
+    for description in rootDict:
+        if description == "is_a":
+            for parent in rootDict[description].split("|"):
+                parent = parent.split("!")[0][:-1]
+                Ancestors.append(parent)
+                GetAncestors(parent, rootDict)
+                break
+        print Ancestors
         
+        
+def select_parents(rootDict,HPO):
 
-    dictChildren = GetAllChildren(rootDict)
-    for key in dictChildren:
-        print key + " : " + str(dictChildren[key])
+    retour={}
+    i=1
+    
+    while HPO!=0:
+    
+        print(HPO)
+        #if rootDict[HPO]["is_a"]:
+        if "is_a" in rootDict[HPO].keys():
+            
+            #print(rootDict[HPO].keys())
+            
+            if "!" in rootDict[HPO]["is_a"]:
+            
+                HPO_parent=rootDict[HPO]["is_a"].split("!")[0].replace(" ","")
+                
+                retour[HPO_parent]=i
+                
+                i+=1
+                
+            HPO=HPO_parent
+                
+        else:
+            
+            HPO=0
+                
+
+
+    return retour       
+    
+    
+def select_parents_2(rootDict,HPO):
+
+    retour={}
+    i=1
+    
+    while HPO!=0:
+    
+        #if rootDict[HPO]["is_a"]:
+        if "is_a" in rootDict[HPO].keys():
+            
+            #print(rootDict[HPO].keys())
+            
+            if "!" in rootDict[HPO]["is_a"]:
+            
+                HPO_parent=rootDict[HPO]["is_a"].split("!")[0].replace(" ","")
+                
+               
+                
+                retour[HPO_parent] = {"Level":i}
+                
+                i+=1
+                
+            HPO=HPO_parent
+                
+        else:
+            HPO=0
+    
+    
+
+
+    return retour
+    
         
-    import networkx as nx
-    G = nx.Graph()
+def main():
+    
+    rootDict = GetTreeObo_2("hp.obo")
+    
+    
+    #print(rootDict.keys())
+    
+#    for HPO in rootDict:
+#        
+#        print(rootDict[HPO].keys())
+    
+#    print(select_parents_2(rootDict,"HP:0000509"))
+    for key in rootDict:
+        parents = select_parents_2(rootDict, key)
+        rootDict[key]["Parents"] = parents
+    
+    for key in rootDict:
+        print key + " : "        
+        for subkey in rootDict[key]:
+            print subkey + " : " + str(rootDict[key][subkey])
+    
+    
+    
+#    for "HP:0000509" in rootDict:
+#        print rootDict['HP:0000509']["is_a"]
         
+        
+#
+#    dictChildren = GetAllChildren(rootDict)
+#    for key in dictChildren:
+#        print key + " : " + str(dictChildren[key])
+#        
+#    
+#    from networkx.readwrite import json_graph
+#    G = nx.DiGraph([(1,2)])
+#    data = json_graph.tree_data(G,root=1)
+#    H = json_graph.tree_graph(data)
 
 
 main()
